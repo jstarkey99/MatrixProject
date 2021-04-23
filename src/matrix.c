@@ -55,6 +55,19 @@ void rand_matrix(matrix *result, unsigned int seed, double low, double high) {
  */
 int allocate_matrix(matrix **mat, int rows, int cols) {
     /* TODO: YOUR CODE HERE */
+    if(rows<1 || cols<1){
+      return -1;
+    }
+    matrix m;
+    m.rows = rows;
+    m.cols = cols;
+    m.data = calloc(rows * cols * sizeof(double));
+    if(!m.data){
+      return -1;
+    }
+    m.ref_cnt = 1;
+    m.parent = NULL;
+    return 0;
 }
 
 /*
