@@ -177,10 +177,12 @@ int mul_matrix(matrix *result, matrix *mat1, matrix *mat2) {
       for(int j = 0; j < result->cols; j++){
         sum = 0;
 	for(int k = 0; k < mat1->cols; k++){
-          sum[i*(result->cols) + j] = mat1[i*(mat1->cols) + k]  * mat2[k*(result->cols) + j];
+          sum += get(mat1, i, k)  * get(mat2, k, j);
 	}
+	set(result, i, j, sum);
       }
-    }      
+    }
+    return 0;    
 }
 
 /*
@@ -190,6 +192,23 @@ int mul_matrix(matrix *result, matrix *mat1, matrix *mat2) {
  */
 int pow_matrix(matrix *result, matrix *mat, int pow) {
     /* TODO: YOUR CODE HERE */
+    matrix *mat2;
+    allocate_matrix(&mat2, mat->rows, mat->cols);
+    for(int k = 0; k < mat->rows; k++){
+      set(mat2, k, k, 1);
+    }
+    double *tmp;
+    for(int i = pow; pow>0; pow--){
+      mul_matrix(result, mat, mat2);
+      tmp = mat2->data;
+      mat2->data = result->data;
+      result->data = tmp;
+    }
+    tmp = result->data;
+    result->data = mat2->data;
+    mat2->data = tmp;
+    deallocate_matrix(mat2);
+    return 0;
 }
 
 /*
@@ -198,6 +217,12 @@ int pow_matrix(matrix *result, matrix *mat, int pow) {
  */
 int neg_matrix(matrix *result, matrix *mat) {
     /* TODO: YOUR CODE HERE */
+    for(int i = 0; i < mat->rows; i++){
+      for(int j = 0; j < mat->cols; j++){
+        set(result, i, j, -get(mat, i, j));
+      }
+    }
+    return 0;
 }
 
 /*
@@ -206,5 +231,13 @@ int neg_matrix(matrix *result, matrix *mat) {
  */
 int abs_matrix(matrix *result, matrix *mat) {
     /* TODO: YOUR CODE HERE */
+    double val;
+    for(int i = 0; i < mat->rows; i++){
+      for(int j = 0; j < mat->cols; j++){
+        val = get(mat, i, j);
+	set(result, i, j, val<0 ? -val : val);
+      }
+    }
+    return 0;
 }
 
