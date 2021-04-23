@@ -58,15 +58,16 @@ int allocate_matrix(matrix **mat, int rows, int cols) {
     if(rows<1 || cols<1){
       return -1;
     }
-    matrix m;
-    m.rows = rows;
-    m.cols = cols;
-    m.data = calloc(rows * cols * sizeof(double));
-    if(!m.data){
+    double *data = calloc(rows*cols);
+    *mat = malloc(20);
+    if(!(*mat) || !data){
       return -1;
     }
-    m.ref_cnt = 1;
-    m.parent = NULL;
+    (*mat)->rows = rows;
+    (*mat)->cols = cols;
+    (*mat)->data = data;
+    (*mat)->ref_cnt = 1;
+    (*mat)->parent = NULL;
     return 0;
 }
 
@@ -81,6 +82,18 @@ int allocate_matrix(matrix **mat, int rows, int cols) {
  */
 int allocate_matrix_ref(matrix **mat, matrix *from, int offset, int rows, int cols) {
     /* TODO: YOUR CODE HERE */
+    if(rows<1 || cols<1){
+      return -1;
+    }
+    *mat = malloc(20);
+    if(!(*mat)) {
+      return -1;
+    }
+    (*mat)->rows = rows;
+    (*mat)->cols = cols;
+    (*mat)->data = from->data + (offset*sizeof(double));
+    (*mat)->ref_cnt = from->ref_cnt + 1;
+    (*mat)->parent = from;
 }
 
 /*
@@ -90,6 +103,13 @@ int allocate_matrix_ref(matrix **mat, matrix *from, int offset, int rows, int co
  */
 void deallocate_matrix(matrix *mat) {
     /* TODO: YOUR CODE HERE */
+    if(!mat){
+      return;
+    }
+    if(mat->ref_cnt > 1){
+      free(mat->data);
+    }
+    free(mat);
 }
 
 /*
@@ -98,6 +118,8 @@ void deallocate_matrix(matrix *mat) {
  */
 double get(matrix *mat, int row, int col) {
     /* TODO: YOUR CODE HERE */
+    double res = (mat->data)[row*(mat->cols) + col];
+    return res;
 }
 
 /*
@@ -106,6 +128,7 @@ double get(matrix *mat, int row, int col) {
  */
 void set(matrix *mat, int row, int col, double val) {
     /* TODO: YOUR CODE HERE */
+    (mat->data)[row*(mat->cols) + col] = val;
 }
 
 /*
@@ -113,6 +136,9 @@ void set(matrix *mat, int row, int col, double val) {
  */
 void fill_matrix(matrix *mat, double val) {
     /* TODO: YOUR CODE HERE */
+    for(int i = 0; i < (mat->rows)*(mat->cols); i+=1)){
+      mat[i] = val;
+    }
 }
 
 /*
@@ -121,6 +147,10 @@ void fill_matrix(matrix *mat, double val) {
  */
 int add_matrix(matrix *result, matrix *mat1, matrix *mat2) {
     /* TODO: YOUR CODE HERE */
+    for(int i = 0; i < (result->rows)*(result->cols); i+=1)){
+      result[i] = mat1[i] + mat2[i];
+    }
+    return 0;
 }
 
 /*
@@ -129,6 +159,10 @@ int add_matrix(matrix *result, matrix *mat1, matrix *mat2) {
  */
 int sub_matrix(matrix *result, matrix *mat1, matrix *mat2) {
     /* TODO: YOUR CODE HERE */
+    for(int i = 0; i < (result->rows)*(result->cols); i+=1)){
+      result[i] = mat1[i] - mat2[i];
+    }
+    return 0;
 }
 
 /*
@@ -138,6 +172,15 @@ int sub_matrix(matrix *result, matrix *mat1, matrix *mat2) {
  */
 int mul_matrix(matrix *result, matrix *mat1, matrix *mat2) {
     /* TODO: YOUR CODE HERE */
+    double sum;
+    for(int i = 0; i < result->rows; i++){
+      for(int j = 0; j < result->cols; j++){
+        sum = 0;
+	for(int k = 0; k < mat1->cols; k++){
+          sum[i*(result->cols) + j] = mat1[i*(mat1->cols) + k]  * mat2[k*(result->cols) + j];
+	}
+      }
+    }      
 }
 
 /*
