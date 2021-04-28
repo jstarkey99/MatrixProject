@@ -235,27 +235,51 @@ int sub_matrix(matrix *result, matrix *mat1, matrix *mat2) {
 int mul_matrix(matrix *result, matrix *mat1, matrix *mat2) {
     /* TODO: YOUR CODE HERE */
     double sum;
+    matrix *mat2T;
     double *rd = result->data;
     double *d1 = mat1->data;
-    double *d2 = mat2->data;
     int cols1 = mat1->cols;
     int cols2 = mat2->cols;
-#pragma omp parallel for private(sum)
+    allocate_matrix(&mat2T, mat2->cols, mat2->rows);
+    for(int i = 0; i < mat2->rows; i++){
+        for(int j = 0; j < cols2; j++){
+            (mat2T->data)[j*cols1 + i] = (mat2->data)[i*cols2 + j];
+	}
+    }
+    double *d2 = mat2T->data;
+    double *sumparts;
+    __m256d simd_sum;
+    __m256d a;
+    __m256d b;
+#pragma omp parallel for private(sum, a, b, simd_sum, sumparts)
     for(int i = 0; i < result->rows; i++){
       for(int j = 0; j < cols2; j++){
-        sum = 0;
-	for(int k = 0; k < cols1/4 * 4; k+=4){
-          sum += d1[i*cols1 + k]  * d2[k*cols2 + j];
-	  sum += d1[i*cols1 + k + 1]  * d2[(k+1)*cols2 + j];
-	  sum += d1[i*cols1 + k + 2]  * d2[(k+2)*cols2 + j];
-	  sum += d1[i*cols1 + k + 3]  * d2[(k+3)*cols2 + j];
+	sumparts = malloc(32);
+	simd_sum = _mm256_setzero_pd();
+	for(int k = 0; k < cols1/16 * 16; k+=16){
+            a = _mm256_loadu_pd(d1+i*cols1+k);
+	    b = _mm256_loadu_pd(d2+j*cols1+k);
+	    simd_sum = _mm256_fmadd_pd(a, b, simd_sum);
+	    a = _mm256_loadu_pd(d1+i*cols1+k+4);
+            b = _mm256_loadu_pd(d2+j*cols1+k+4);
+            simd_sum = _mm256_fmadd_pd(a, b, simd_sum);
+	    a = _mm256_loadu_pd(d1+i*cols1+k+8);
+            b = _mm256_loadu_pd(d2+j*cols1+k+8);
+            simd_sum = _mm256_fmadd_pd(a, b, simd_sum);
+	    a = _mm256_loadu_pd(d1+i*cols1+k+12);
+            b = _mm256_loadu_pd(d2+j*cols1+k+12);
+            simd_sum = _mm256_fmadd_pd(a, b, simd_sum);
 	}
-	for(int k = cols1/4 * 4; k < cols1; k++){
-	  sum += d1[i*cols1 + k] * d2[k*cols2 + j];
+	_mm256_storeu_pd(sumparts, simd_sum);
+	sum = sumparts[0] + sumparts[1] + sumparts[2] + sumparts[3];
+	free(sumparts);
+	for(int k = cols1/16 * 16; k < cols1; k++){
+	  sum += d1[i*cols1 + k] * d2[j*cols1 + k];
 	}
 	rd[i*cols2 + j] = sum;
       }
     }
+    deallocate_matrix(mat2T);
     return 0;    
 }
 
