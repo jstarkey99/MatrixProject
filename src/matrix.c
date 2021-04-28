@@ -298,19 +298,31 @@ int pow_matrix(matrix *result, matrix *mat, int pow) {
       set(mat3, k, k, 1);
     }
     double *tmp;
-    if(pow>15){
-    	mul_matrix(result, mat, mat);
+    if(pow>31){
+	mul_matrix(mat2, mat, mat);
+	mul_matrix(result, mat2, mat2);
 	mul_matrix(mat2, result, result);
 	mul_matrix(result, mat2, mat2);
 	mul_matrix(mat2, result, result);
-	for(int i = 0; i < pow/16; i++){
+	for(int i = 0; i < pow/32; i++){
 	    mul_matrix(result, mat2, mat3);
 	    tmp = mat3->data;
 	    mat3->data = result->data;
 	    result->data = tmp;
 	}
     }
-    for(int i = 0; i < pow % 16; i++){
+    if(pow % 32 > 4){
+    	mul_matrix(result, mat, mat);
+        mul_matrix(mat2, result, result);
+	for(int i = pow/32 * 32; i < pow/4 * 4; i+=4){
+	    mul_matrix(result, mat2, mat3);
+            tmp = mat3->data;
+            mat3->data = result->data;
+            result->data = tmp;
+	}
+
+    }
+    for(int i = 0; i < pow % 4; i++){
 	mul_matrix(result, mat3, mat);
 	tmp = result->data;
 	result->data = mat3->data;
