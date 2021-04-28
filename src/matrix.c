@@ -255,7 +255,7 @@ int mul_matrix(matrix *result, matrix *mat1, matrix *mat2) {
       for(int j = 0; j < cols2; j++){
 	double sumparts[4];
 	simd_sum = _mm256_setzero_pd();
-	for(int k = 0; k < cols1/32 * 32; k+=32){
+	for(int k = 0; k < cols1/20 * 20; k+=20){
             a = _mm256_loadu_pd(d1+i*cols1+k);
 	    b = _mm256_loadu_pd(d2+j*cols1+k);
 	    simd_sum = _mm256_fmadd_pd(a, b, simd_sum);
@@ -271,19 +271,10 @@ int mul_matrix(matrix *result, matrix *mat1, matrix *mat2) {
 	    a = _mm256_loadu_pd(d1+i*cols1+k+16);
             b = _mm256_loadu_pd(d2+j*cols1+k+16);
             simd_sum = _mm256_fmadd_pd(a, b, simd_sum);
-	    a = _mm256_loadu_pd(d1+i*cols1+k+20);
-            b = _mm256_loadu_pd(d2+j*cols1+k+20);
-            simd_sum = _mm256_fmadd_pd(a, b, simd_sum);
-	    a = _mm256_loadu_pd(d1+i*cols1+k+24);
-            b = _mm256_loadu_pd(d2+j*cols1+k+24);
-            simd_sum = _mm256_fmadd_pd(a, b, simd_sum);
-	    a = _mm256_loadu_pd(d1+i*cols1+k+28);
-            b = _mm256_loadu_pd(d2+j*cols1+k+28);
-            simd_sum = _mm256_fmadd_pd(a, b, simd_sum);
 	}
 	_mm256_storeu_pd(sumparts, simd_sum);
 	sum = sumparts[0] + sumparts[1] + sumparts[2] + sumparts[3];
-	for(int k = cols1/32 * 32; k < cols1; k++){
+	for(int k = cols1/20 * 20; k < cols1; k++){
 	  sum += d1[i*cols1 + k] * d2[j*cols1 + k];
 	}
 	rd[i*cols2 + j] = sum;
