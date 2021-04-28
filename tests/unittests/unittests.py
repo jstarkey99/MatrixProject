@@ -132,8 +132,8 @@ class TestMul(TestCase):
 
     def test_large_mul(self):
         # TODO: YOUR CODE HERE
-        dp_mat1, nc_mat1 = rand_dp_nc_matrix(1450, 1550, seed=0)
-        dp_mat2, nc_mat2 = rand_dp_nc_matrix(1550, 1650, seed=1)
+        dp_mat1, nc_mat1 = rand_dp_nc_matrix(950, 1050, seed=0)
+        dp_mat2, nc_mat2 = rand_dp_nc_matrix(1050, 1150, seed=1)
         is_correct, speed_up = compute([dp_mat1, dp_mat2], [nc_mat1, nc_mat2], "mul")
         self.assertTrue(is_correct)
         print_speedup(speed_up)
@@ -155,8 +155,8 @@ class TestPow(TestCase):
 
     def test_large_pow(self):
         # TODO: YOUR CODE HERE
-        dp_mat, nc_mat = rand_dp_nc_matrix(100, 100, seed=0)
-        is_correct, speed_up = compute([dp_mat, 210], [nc_mat, 210], "pow")
+        dp_mat, nc_mat = rand_dp_nc_matrix(90, 90, seed=0)
+        is_correct, speed_up = compute([dp_mat, 1790], [nc_mat, 1790], "pow")
         self.assertTrue(is_correct)
         print_speedup(speed_up)
 

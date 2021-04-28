@@ -247,16 +247,15 @@ int mul_matrix(matrix *result, matrix *mat1, matrix *mat2) {
 	}
     }
     double *d2 = mat2T->data;
-    double *sumparts;
     __m256d simd_sum;
     __m256d a;
     __m256d b;
-#pragma omp parallel for private(sum, a, b, simd_sum, sumparts)
+#pragma omp parallel for private(sum, a, b, simd_sum)
     for(int i = 0; i < result->rows; i++){
       for(int j = 0; j < cols2; j++){
-	sumparts = malloc(32);
+	double sumparts[4];
 	simd_sum = _mm256_setzero_pd();
-	for(int k = 0; k < cols1/16 * 16; k+=16){
+	for(int k = 0; k < cols1/32 * 32; k+=32){
             a = _mm256_loadu_pd(d1+i*cols1+k);
 	    b = _mm256_loadu_pd(d2+j*cols1+k);
 	    simd_sum = _mm256_fmadd_pd(a, b, simd_sum);
@@ -269,11 +268,22 @@ int mul_matrix(matrix *result, matrix *mat1, matrix *mat2) {
 	    a = _mm256_loadu_pd(d1+i*cols1+k+12);
             b = _mm256_loadu_pd(d2+j*cols1+k+12);
             simd_sum = _mm256_fmadd_pd(a, b, simd_sum);
+	    a = _mm256_loadu_pd(d1+i*cols1+k+16);
+            b = _mm256_loadu_pd(d2+j*cols1+k+16);
+            simd_sum = _mm256_fmadd_pd(a, b, simd_sum);
+	    a = _mm256_loadu_pd(d1+i*cols1+k+20);
+            b = _mm256_loadu_pd(d2+j*cols1+k+20);
+            simd_sum = _mm256_fmadd_pd(a, b, simd_sum);
+	    a = _mm256_loadu_pd(d1+i*cols1+k+24);
+            b = _mm256_loadu_pd(d2+j*cols1+k+24);
+            simd_sum = _mm256_fmadd_pd(a, b, simd_sum);
+	    a = _mm256_loadu_pd(d1+i*cols1+k+28);
+            b = _mm256_loadu_pd(d2+j*cols1+k+28);
+            simd_sum = _mm256_fmadd_pd(a, b, simd_sum);
 	}
 	_mm256_storeu_pd(sumparts, simd_sum);
 	sum = sumparts[0] + sumparts[1] + sumparts[2] + sumparts[3];
-	free(sumparts);
-	for(int k = cols1/16 * 16; k < cols1; k++){
+	for(int k = cols1/32 * 32; k < cols1; k++){
 	  sum += d1[i*cols1 + k] * d2[j*cols1 + k];
 	}
 	rd[i*cols2 + j] = sum;
@@ -298,23 +308,35 @@ int pow_matrix(matrix *result, matrix *mat, int pow) {
       set(mat3, k, k, 1);
     }
     double *tmp;
-    if(pow>31){
-	mul_matrix(mat2, mat, mat);
-	mul_matrix(result, mat2, mat2);
+    if(pow % 256 > 63){
+	mul_matrix(result, mat, mat);
 	mul_matrix(mat2, result, result);
 	mul_matrix(result, mat2, mat2);
 	mul_matrix(mat2, result, result);
-	for(int i = 0; i < pow/32; i++){
+	mul_matrix(result, mat2, mat2);
+	mul_matrix(mat2, result, result);
+	for(int i = pow/256 * 256; i < pow/64 * 64; i+=64){
 	    mul_matrix(result, mat2, mat3);
 	    tmp = mat3->data;
 	    mat3->data = result->data;
 	    result->data = tmp;
 	}
     }
-    if(pow % 32 > 3){
-    	mul_matrix(result, mat, mat);
+    if(pow > 255){
+	mul_matrix(result, mat2, mat2);
+	mul_matrix(mat2, result, result);
+	for(int i = 0; i < pow/256; i++){
+            mul_matrix(result, mat2, mat3);
+            tmp = mat3->data;
+            mat3->data = result->data;
+            result->data = tmp;
+        }
+    }
+    if(pow % 64 > 7){
+    	mul_matrix(mat2, mat, mat);
+	mul_matrix(result, mat2, mat2);
         mul_matrix(mat2, result, result);
-	for(int i = pow/32 * 32; i < pow/4 * 4; i+=4){
+	for(int i = pow/64 * 64; i < pow/8 * 8; i+=8){
 	    mul_matrix(result, mat2, mat3);
             tmp = mat3->data;
             mat3->data = result->data;
@@ -322,7 +344,7 @@ int pow_matrix(matrix *result, matrix *mat, int pow) {
 	}
 
     }
-    for(int i = 0; i < pow % 4; i++){
+    for(int i = 0; i < pow % 8; i++){
 	mul_matrix(result, mat3, mat);
 	tmp = result->data;
 	result->data = mat3->data;
