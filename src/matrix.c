@@ -311,7 +311,7 @@ int pow_matrix(matrix *result, matrix *mat, int pow) {
 	    result->data = tmp;
 	}
     }
-    if(pow % 32 > 4){
+    if(pow % 32 > 3){
     	mul_matrix(result, mat, mat);
         mul_matrix(mat2, result, result);
 	for(int i = pow/32 * 32; i < pow/4 * 4; i+=4){
